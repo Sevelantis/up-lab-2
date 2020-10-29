@@ -7,7 +7,55 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Button Content="Browse" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+        <Button Content="Open" Name="BrowseButton" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="OnBrowseButtonClick"/>
+        <Button Content="PlaySound" Name="PlayButton" HorizontalAlignment="Left" Margin="10,37,0,0" VerticalAlignment="Top" Width="75" Click="OnPlayButtonClick"/>
+        <Label Content="Sound path not set yet." Name="soundPathLabel" HorizontalAlignment="Left" Margin="90,6,0,0" VerticalAlignment="Top"/>
+        <Button Content="Stop" Name="StopButton" HorizontalAlignment="Left" Margin="182,37,0,0" VerticalAlignment="Top" Width="75" Click="OnStopButtonClick"/>
+        <Button Content="Pause" Name="PauseButton" HorizontalAlignment="Left" Margin="90,37,0,0" VerticalAlignment="Top" Width="75" Click="OnPauseButtonClick"/>
+        <Label Content="wavHeaderLabel" Name="WavHeaderLabel" HorizontalAlignment="Left" Margin="126,62,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.174,-0.167" Width="513"/>
+        <Button Content="Read .wav header" Name="WavHeaderButton" HorizontalAlignment="Left" Margin="10,64,0,0" VerticalAlignment="Top" Width="103" Click="OnWavHeaderButtonClick"/>
+        <Button Content="Play with WMP" HorizontalAlignment="Left" Margin="10,91,0,0" VerticalAlignment="Top" Width="103" Click="OnWmpPlayClick"/>
 
+        <Button Margin="12,332,626,12" Click="OnStartRecordButtonClick" Name="StartRecordingButton">
+            <Button.Content>
+                <Rectangle Width="50" Height="50" RenderTransformOrigin="0.5,0.5">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="Red" />
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button.Content>
+        </Button>
+
+        <Button Margin="172,332,478,12" Click="OnStopRecordButtonClick" Name="StopRecordingButton">
+            <Button.Content>
+                <Rectangle Width="50" Height="50" RenderTransformOrigin="0.5,0.5">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="Black" />
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Button.Content>
+        </Button>
+
+        <Button Content="Pause with WMP" HorizontalAlignment="Left" Margin="10,118,0,0" VerticalAlignment="Top" Width="103" Click="OnWmpPauseClick"/>
+        <Button Content="Stop with WMP" HorizontalAlignment="Left" Margin="10,147,0,0" VerticalAlignment="Top" Width="103" Click="OnWmpStopClick"/>
+        <ComboBox Name="InputDeviceCmbBox" SelectionChanged="InputDeviceCmbBox_SelectionChanged" Margin="12,294,478,94">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Channels: " />
+                        <TextBlock Text="{Binding Channels}" />
+                        <TextBlock Text=", ProductName: "/>
+                        <TextBlock Text="{Binding ProductName}" />
+                        <TextBlock Text=")" />
+                    </StackPanel>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <Label Content="Choose input device:" HorizontalAlignment="Left" Margin="12,264,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.039,0.346" Width="174"/>
+        <Button Content="Choose Save Dir" HorizontalAlignment="Left" Margin="319,294,0,0" VerticalAlignment="Top" Width="102" Click="OnShowInExplorerClick"/>
+        <Label Content="Save Path" Name="SavePathLabel" HorizontalAlignment="Left" Margin="319,332,0,0" VerticalAlignment="Top" Width="397"/>
+        <Label Content="Label" Name="TestLabel" HorizontalAlignment="Left" Margin="368,62,0,0" VerticalAlignment="Top" Height="78" Width="104"/>
+        <Button Content="Reset" Name="ResetButton"  HorizontalAlignment="Left" Margin="12,174,0,0" VerticalAlignment="Top" Width="73" Height="57" Click="OnResetButtonClick"/>
     </Grid>
 </Window>
