@@ -55,7 +55,9 @@
         <Label Content="Choose input device:" HorizontalAlignment="Left" Margin="12,264,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.039,0.346" Width="174"/>
         <Button Content="Choose Save Dir" HorizontalAlignment="Left" Margin="319,294,0,0" VerticalAlignment="Top" Width="102" Click="OnShowInExplorerClick"/>
         <Label Content="Save Path" Name="SavePathLabel" HorizontalAlignment="Left" Margin="319,332,0,0" VerticalAlignment="Top" Width="397"/>
-        <Label Content="Label" Name="TestLabel" HorizontalAlignment="Left" Margin="368,62,0,0" VerticalAlignment="Top" Height="78" Width="104"/>
-        <Button Content="Reset" Name="ResetButton"  HorizontalAlignment="Left" Margin="12,174,0,0" VerticalAlignment="Top" Width="73" Height="57" Click="OnResetButtonClick"/>
+        <Slider HorizontalAlignment="Left" Name="VolumeSlider" Margin="581,358,0,0" VerticalAlignment="Top" Width="201" ValueChanged="VolumeSlider_ValueChanged"/>
+        <Slider HorizontalAlignment="Left" Name="PanningSlider" Margin="581,388,0,0" VerticalAlignment="Top" Width="201" ValueChanged="PanningSlider_ValueChanged"/>
+        <Label Content="Volume" HorizontalAlignment="Left" Margin="525,358,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.794,0.635"/>
+        <Label Content="Panning"  HorizontalAlignment="Left" Margin="523,384,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.425,8.577"/>
     </Grid>
 </Window>

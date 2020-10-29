@@ -6,6 +6,9 @@ using System.Windows.Interop;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Collections.Generic;
+using NAudio.Wave.SampleProviders;
+using System.Windows.Media.Imaging;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace up_lab_2
 {
@@ -14,11 +17,12 @@ namespace up_lab_2
     /// </summary>
     public partial class MainWindow : Window
     {
-
         private string filePath = "E:\\SZKOLA\\aaaSEMESTR - 5\\UP\\Lab2\\up-lab-2\\sounds\\sound.wav";
         private string savePath = null;
         private WaveOutEvent outputDevice;
         private AudioFileReader audioFileReader;
+        private VolumeSampleProvider volumeProvider;
+        private PanningSampleProvider panningProvider;
         private WMPLib.WindowsMediaPlayer wmplayer;
         public WaveIn waveSource = null;
         public WaveFileWriter waveFile = null;
@@ -33,10 +37,7 @@ namespace up_lab_2
 
         private void init()
         {
-            audioFileReader = new AudioFileReader(filePath);
-            soundPathLabel.Content = "Sound path: " + filePath;
-            outputDevice = new WaveOutEvent();
-            outputDevice.Init(audioFileReader);
+            initOutputDevice();
 
             //update input devices combo box
             for (int n = 0; n < WaveIn.DeviceCount; n++)
@@ -54,6 +55,14 @@ namespace up_lab_2
             }
 
             StopRecordingButton.IsEnabled = false;
+            //slider
+            VolumeSlider.Minimum = 0;
+            VolumeSlider.Maximum = 100;
+            PanningSlider.Minimum = -100;
+            PanningSlider.Maximum = 100;
+            VolumeSlider.Value = 50;
+            PanningSlider.Value = 0;
+            //init 
         }
         private void OnBrowseButtonClick(object sender, RoutedEventArgs e)
         {
@@ -64,38 +73,58 @@ namespace up_lab_2
             {
                 filePath = dialog.FileName;
                 soundPathLabel.Content = "Sound path: " + filePath;
-                audioFileReader = new AudioFileReader(filePath);
-                outputDevice = null;
+                closeOutputDevice();
+                SetWaveImage();
             }
+        }
+
+        private void SetWaveImage()
+        {
+
         }
 
         private void OnPlayButtonClick(object sender, RoutedEventArgs e)
         {
             if(filePath != null)
             {
+                audioFileReader = new AudioFileReader(filePath);
                 PlaySound();
             }
         }
 
         private void PlaySound()
         {
+            StartRecordingButton.IsEnabled = false;
             if (outputDevice == null)
             {
+                StereoToMonoSampleProvider toMonoSampleProvider;
                 outputDevice = new WaveOutEvent();
-                outputDevice.Init(audioFileReader);
+                try
+                {
+                    toMonoSampleProvider = new StereoToMonoSampleProvider(audioFileReader);
+                    volumeProvider = new VolumeSampleProvider(toMonoSampleProvider);
+                }
+                catch(ArgumentException)
+                {
+                    volumeProvider = new VolumeSampleProvider(audioFileReader);
+                }
+                
+                panningProvider = new PanningSampleProvider(volumeProvider);
+                panningProvider.Pan = (float)(PanningSlider.Value / 100.0f);
+                volumeProvider.Volume = (float)(VolumeSlider.Value / 100.0f);
+                //TestLabel.Content = panningProvider.Pan;
+
+                outputDevice.Init(panningProvider);
             }
-            outputDevice.Play();
+            if(outputDevice != null)
+                outputDevice.Play();
         }
 
         private void OnStopButtonClick(object sender, RoutedEventArgs e)
         {
-            if (outputDevice != null)
-            {
-                outputDevice.Stop();
-                outputDevice.Dispose();
-                outputDevice = null;
-                audioFileReader = new AudioFileReader(filePath);
-            }
+            StartRecordingButton.IsEnabled = true;
+            closeOutputDevice();
+            closeAudioFilerReader();
         }
 
         private void OnPauseButtonClick(object sender, RoutedEventArgs e)
@@ -108,7 +137,7 @@ namespace up_lab_2
 
         private void OnWavHeaderButtonClick(object sender, RoutedEventArgs e)
         {
-            if (!filePath.Contains(".wav")) return;
+            if (!filePath.Contains(".wav") || audioFileReader == null) return;
 
             string AverageBytesPerSecond = "Average Bytes Per Second: " + audioFileReader.WaveFormat.AverageBytesPerSecond.ToString();
             string SampleRate = "Sample rate: " + audioFileReader.WaveFormat.SampleRate.ToString();
@@ -126,18 +155,19 @@ namespace up_lab_2
                 wmplayer = new WMPLib.WindowsMediaPlayer();
                 wmplayer.URL = filePath;
             }
-            wmplayer.controls.play();
+            if(wmplayer != null)
+                wmplayer.controls.play();
         }
 
         private void OnWmpPauseClick(object sender, RoutedEventArgs e)
         {
-            wmplayer.controls.pause();
+            if (wmplayer != null)
+                wmplayer.controls.pause();
         }
 
         private void OnWmpStopClick(object sender, RoutedEventArgs e)
         {
-            wmplayer.controls.stop();
-            wmplayer = null;
+            closeMediaPlayer();
         }
 
         //----------------------------MICROPHONE -------------------------------
@@ -147,13 +177,23 @@ namespace up_lab_2
 
             if (savePath == null) ChooseSaveDir();
 
-            updateAudioInputDevice();
+            if (WaveIn.DeviceCount > 0)
+            {
+                if (waveSource == null)
+                {
+                    waveSource = new WaveIn();
+                    waveSource.DeviceNumber = InputDeviceCmbBox.SelectedIndex;
+                }
+            }
 
             waveSource.WaveFormat = new WaveFormat(44100, waveSource.WaveFormat.Channels);
 
             waveSource.DataAvailable += new EventHandler<WaveInEventArgs>(waveSource_DataAvailable);
             waveSource.RecordingStopped += new EventHandler<StoppedEventArgs>(waveSource_RecordingStopped);
 
+            closeOutputDevice();
+            closeAudioFilerReader();
+            closeMediaPlayer();
             waveFile = new WaveFileWriter(savePath + "/recorded.wav", waveSource.WaveFormat);
 
             //record
@@ -183,30 +223,18 @@ namespace up_lab_2
 
         void waveSource_RecordingStopped(object sender, StoppedEventArgs e)
         {
-            if (waveSource != null)
-            {
-                waveSource.Dispose();
-                waveSource = null;
-            }
-
-            if (waveFile != null)
-            {
-                waveFile.Dispose();
-                waveFile = null;
-            }
+            closeInputDevice();
         }
 
         private void InputDeviceCmbBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            updateAudioInputDevice();
-        }
-
-        private void updateAudioInputDevice()
-        {
             if (WaveIn.DeviceCount > 0)
             {
-                if (waveSource == null) waveSource = new WaveIn();
-                waveSource.DeviceNumber = InputDeviceCmbBox.SelectedIndex;
+                if (waveSource == null)
+                {
+                    waveSource = new WaveIn();
+                    waveSource.DeviceNumber = InputDeviceCmbBox.SelectedIndex;
+                }
             }
         }
 
@@ -226,20 +254,74 @@ namespace up_lab_2
                 SavePathLabel.Content = "save path = "+savePath;
             }
         }
-        private void OnResetButtonClick(object sender, RoutedEventArgs e)
-        {
-            waveFile = null;
-            outputDevice = null;
-            audioFileReader = null;
-            wmplayer = null;
-            filePath = null;
-            soundPathLabel.Content = "Sound path: ";
 
-            //init output
-            //audioFileReader = new AudioFileReader(filePath);
-            //soundPathLabel.Content = "Sound path: " + filePath;
-            //outputDevice = new WaveOutEvent();
-            //outputDevice.Init(audioFileReader);
+
+        private void closeAudioFilerReader()
+        {
+            if (audioFileReader != null)
+            {
+                audioFileReader.Dispose();
+                audioFileReader = null;
+                panningProvider = null;
+                volumeProvider = null;
+            }
+        }
+        private void closeOutputDevice()
+        {
+            if (outputDevice != null)
+            {
+                outputDevice.Dispose();
+                outputDevice = null;
+            }
+        }
+
+        private void initOutputDevice()
+        {
+            audioFileReader = new AudioFileReader(filePath);
+            soundPathLabel.Content = "Sound path: " + filePath;
+            outputDevice = new WaveOutEvent();
+            outputDevice.Init(audioFileReader);
+        }
+
+        private void closeInputDevice()
+        {
+            if (waveSource != null)
+            {
+                waveSource.Dispose();
+                waveSource = null;
+            }
+
+            if (waveFile != null)
+            {
+                waveFile.Dispose();
+                waveFile = null;
+            }
+        }
+        private void closeMediaPlayer()
+        {
+            if(wmplayer != null)
+            {
+                wmplayer.controls.stop();
+                wmplayer = null;
+            }
+        }
+
+        private void PanningSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if(panningProvider != null)
+            {
+                float newValue = (float)(PanningSlider.Value / 100.0f);
+                panningProvider.Pan = newValue;
+            }
+        }
+
+        private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (volumeProvider != null)
+            {
+                float newValue = (float)(VolumeSlider.Value / 100.0f);
+                volumeProvider.Volume = newValue;
+            }
         }
     }
 
